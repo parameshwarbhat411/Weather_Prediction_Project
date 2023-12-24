@@ -7,4 +7,5 @@ if __name__ == "__main__":
     weather.load_to_cloudStorage(overwrite=False)
     df = weather.process_cloud_data().reset_index(drop=True)
     weather.add_processed_metadata()
+    weather.load_to_bigquery(dataframe=df, dataset_name="weather", table_name="weather")
     print("Ready")

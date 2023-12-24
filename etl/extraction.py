@@ -6,6 +6,7 @@ import json
 from datetime import datetime
 
 from google.cloud.exceptions import Conflict
+from google.cloud.bigquery.client import Client as bigquery_client
 
 import etl.util as ut
 from typing import Tuple
@@ -14,8 +15,8 @@ from google.cloud import storage
 CURRENT_DATE = datetime.now().strftime("%Y-%m-%d").replace("-", "_")
 DIRECTORY = f"{ut.Util.WORK_DIR}/{CURRENT_DATE}"
 os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = "/Users/arjunbhat/Downloads/bright-raceway-406701-2ed6ff87c381.json"
-storage_client = storage.Client()
-
+STORAGE_CLIENT = storage.Client()
+BIG_QUERY_CLIENT = bigquery_client()
 
 class WeatherPipeLine:
 
@@ -71,7 +72,7 @@ class WeatherPipeLine:
             raise
 
     def list_buckets(self):
-        buckets = storage_client.list_buckets()
+        buckets = STORAGE_CLIENT.list_buckets()
 
         for bucket in buckets:
             print(bucket.name)
@@ -79,11 +80,11 @@ class WeatherPipeLine:
     def getOrCreate_bucket(self, bucket_name=f'weather_bucket_{CURRENT_DATE}'):
         try:
             # Try creating the bucket
-            bucket = storage_client.create_bucket(bucket_or_name=bucket_name)
+            bucket = STORAGE_CLIENT.create_bucket(bucket_or_name=bucket_name)
             print(f"Bucket {bucket_name} created.")
         except Conflict:
             print(f"Bucket {bucket_name} already exists. Retrieving the existing bucket.")
-            bucket = storage_client.get_bucket(bucket_or_name=bucket_name)
+            bucket = STORAGE_CLIENT.get_bucket(bucket_or_name=bucket_name)
         except Exception as e:
             print(f"An unexpected error occurred: {e}")
             raise
@@ -181,7 +182,6 @@ class WeatherPipeLine:
                 file_content = blob.download_as_string()
                 data = json.loads(file_content.decode('utf-8'))
                 processed_data = []
-                print(blob.name)
                 # Iterate over each record in the data
                 for record in data['list']:
                     # Extract relevant fields
@@ -219,3 +219,83 @@ class WeatherPipeLine:
             blob.metadata = {'processed': 'true'}
             blob.patch()
             print(f"Added processed metadata to {blob.name}")
+
+    def getOrCreate_dataset(self, dataset_name: str = "weather"):
+        """
+        Get dataset. If the dataset does not exists, create it.
+        Args:
+            - dataset_name(str) = Name of the new/existing data set.
+            - project_id(str) = project id(default = The project id of the bigquery_client object)
+        Returns:
+            - dataset(google.cloud.bigquery.dataset.Dataset) = Google BigQuery Dataset
+        """
+        print('Fetching Dataset...')
+        try:
+            # get and return dataset if exist
+            dataset = BIG_QUERY_CLIENT.get_dataset(dataset_name)
+            print('Done')
+            print(dataset.self_link)
+            return dataset
+
+        except Exception as e:
+            # If not, create and return dataset
+            if e.code == 404:
+                print('Dataset does not exist. Creating a new one.')
+                BIG_QUERY_CLIENT.create_dataset(dataset_name)
+                dataset = BIG_QUERY_CLIENT.get_dataset(dataset_name)
+                print('Done')
+                print(dataset.self_link)
+                return dataset
+            else:
+                print(e)
+
+    def getOrCreate_table(self, dataset_name: str = "weather", table_name: str = "weather"):
+        """
+        Create a table. If the table already exists, return it.
+        Args:
+            - table_name(str) = Name of the new/existing table.
+            - dataset_name(str) = Name of the new/existing data set.
+            - project_id(str) = project id(default = The project id of the bigquery_client object)
+        Returns:
+            - table(google.cloud.bigquery.table.Table) = Google BigQuery table
+        """
+        # Grab prerequisites for creating a table
+        dataset = self.getOrCreate_dataset()
+        project = dataset.project
+        dataset = dataset.dataset_id
+        table_id = project + '.' + dataset + '.' + table_name
+
+        print('\n Fetching Table')
+
+        try:
+
+            table = BIG_QUERY_CLIENT.get_table(table_id)
+            print("Done")
+            print(table.self_link)
+
+        except Exception as e:
+            if e.code == 404:
+                print("Table does not exist, creating new one")
+                BIG_QUERY_CLIENT.create_table(table_id)
+                table = BIG_QUERY_CLIENT.get_table(table_id)
+                print(table.self_link)
+            else:
+                print(e)
+
+        finally:
+            return table
+
+    def load_to_bigquery(self, dataframe, dataset_name, table_name):
+        """
+        Description:
+            - Get or Create a dataset
+            - Get or Create a table
+            - Load data from a DataFrame to BigQuery
+        Args:
+            dataset_name(str)
+            table_name(str)
+        Returns:
+            None
+        """
+        table = self.getOrCreate_table(dataset_name=dataset_name,table_name=table_name)
+        BIG_QUERY_CLIENT.load_table_from_dataframe(dataframe=dataframe,destination=table)
