@@ -15,7 +15,8 @@ Google Cloud Storage: Serves as the intermediary storage solution for the proces
 
 Google BigQuery: Used for storing, querying, and analyzing the weather data to make predictions for the next day's weather.
 
-Workflow
+**Workflow**
+
 The pipeline starts by extracting weather data for the specified locations using the OpenWeatherMap API.
 The extracted data is then processed to format and clean it for analysis.
 The processed data is stored in Google Cloud Storage and subsequently loaded into Google BigQuery.
@@ -23,7 +24,8 @@ Analysis and predictions are made based on the past 24-hour weather data to fore
 Usage
 To use this pipeline, you need to set up Apache Airflow, Google Cloud Storage, and Google BigQuery. You also need to provide a list of locations for which you want to fetch weather data. The pipeline can be scheduled to run at regular intervals (e.g., daily) to continuously update the weather predictions.
 
-Setup
+**Setup**
+
 Environment Setup:
 
 Create a virtual environment and activate it.
@@ -36,11 +38,13 @@ Start the Airflow webserver and scheduler.
 BigQuery Setup:
 
 Create a dataset and table in BigQuery to store the processed weather data.
-Running the Pipeline
+
+**Running the Pipeline**
+
 Access the Airflow web interface and trigger the load_weather_data DAG.
 Monitor the DAG execution and view the logs for each task.
 Check the BigQuery table to verify that the weather data has been loaded successfully.
 
 
-Conclusion
+**Conclusion**
 This weather data pipeline project demonstrates how to leverage cloud services and data orchestration tools to build a scalable and automated system for weather data analysis and prediction.
