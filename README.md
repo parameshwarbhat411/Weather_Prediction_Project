@@ -47,4 +47,5 @@ Check the BigQuery table to verify that the weather data has been loaded success
 
 
 **Conclusion**
+
 This weather data pipeline project demonstrates how to leverage cloud services and data orchestration tools to build a scalable and automated system for weather data analysis and prediction.
