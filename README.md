@@ -61,3 +61,128 @@ Follow these steps to set up the development environment:
    python -m venv venv
    source venv/bin/activate  # On macOS/Linux
    venv\Scripts\activate  # On Windows
+   ```
+
+2. **Install dependencies:**
+   ```sh
+   pip install -r requirements.txt
+   ```
+
+3. **Set up Google Cloud credentials:**
+   - Obtain a **Google Cloud Service Account JSON key**.
+   - Export the credentials as an environment variable:
+     ```sh
+     export GOOGLE_APPLICATION_CREDENTIALS="path/to/your-service-account.json"
+     ```
+
+### **2. Airflow Configuration**
+1. **Initialize the Airflow database:**
+   ```sh
+   airflow db init
+   ```
+
+2. **Start the Airflow webserver:**
+   ```sh
+   airflow webserver --port 8080
+   ```
+
+3. **Start the Airflow scheduler:**
+   ```sh
+   airflow scheduler
+   ```
+
+4. **Access the Airflow UI** at: [http://localhost:8080](http://localhost:8080)
+
+### **3. BigQuery Setup**
+1. **Create a new dataset** in **Google BigQuery**:
+   ```sql
+   CREATE SCHEMA weather_data;
+   ```
+
+2. **Create a table** in BigQuery to store the **processed weather data**:
+   ```sql
+   CREATE TABLE weather_data.weather_forecast (
+       location STRING,
+       timestamp TIMESTAMP,
+       temperature FLOAT64,
+       humidity INT64,
+       wind_speed FLOAT64,
+       weather_condition STRING
+   );
+   ```
+
+---
+
+## Running the Pipeline
+
+1. **Trigger the Airflow DAG**:
+   - Navigate to the Airflow UI ([http://localhost:8080](http://localhost:8080)).
+   - Locate the DAG named **`load_weather_data`**.
+   - Click on **"Trigger DAG"** to start the pipeline.
+
+2. **Monitor the DAG Execution**:
+   - Check the **logs** for each task to verify execution.
+
+3. **Verify Data in BigQuery**:
+   - Run the following query in BigQuery to check if the weather data has been successfully loaded:
+     ```sql
+     SELECT * FROM weather_data.weather_forecast LIMIT 10;
+     ```
+
+---
+
+## DAG Structure
+
+Below is a high-level structure of the **Airflow DAG** used for this pipeline:
+
+```mermaid
+graph TD;
+    A[Start Pipeline] --> B[Extract Weather Data]
+    B --> C[Transform & Clean Data]
+    C --> D[Store Processed Data in GCS]
+    D --> E[Load Data into BigQuery]
+    E --> F[Analyze & Predict Next-Day Weather]
+    F --> G[End Pipeline]
+```
+
+---
+
+## Expected Output
+
+- **BigQuery Table:** Stores processed weather data with features such as temperature, humidity, wind speed, and weather conditions.
+- **Weather Predictions:** Generates **next-day forecasts** based on the past 24 hours of weather data.
+- **Airflow DAG Execution Logs:** Logs each step of the ETL process, allowing monitoring and debugging.
+
+---
+
+## Troubleshooting
+
+### **1. Airflow Issues**
+- If the **Airflow webserver** does not start, try:
+  ```sh
+  airflow webserver --port 8080 --debug
+  ```
+
+- If DAGs are not appearing, ensure the correct `AIRFLOW_HOME` path:
+  ```sh
+  echo $AIRFLOW_HOME
+  ```
+
+### **2. Google Cloud Issues**
+- Ensure that your **Google Cloud Service Account** has `BigQuery Data Editor` and `Storage Admin` roles.
+- Verify that the `GOOGLE_APPLICATION_CREDENTIALS` environment variable is correctly set.
+
+---
+
+## Conclusion
+
+This **weather data pipeline project** demonstrates how to **leverage cloud services and data orchestration tools** to build a **scalable and automated system for weather data analysis and prediction**. By using **Apache Airflow**, **Google Cloud Storage**, and **Google BigQuery**, the pipeline efficiently extracts, processes, and analyzes weather data while enabling scheduled automation.
+
+---
+
+## References
+
+- [Apache Airflow Documentation](https://airflow.apache.org/)
+- [Google Cloud Storage Docs](https://cloud.google.com/storage/docs/)
+- [Google BigQuery Docs](https://cloud.google.com/bigquery/docs/)
+- [OpenWeatherMap API](https://openweathermap.org/api)
