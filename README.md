@@ -19,7 +19,7 @@ The **Extract, Transform, Load (ETL)** process is the **core of the pipeline** a
 
 ### **2. Machine Learning Model for Prediction**
 - Uses **supervised learning models** trained on past weather data to forecast **next-day weather conditions**.
-- Supports models like **Linear Regression, Random Forest, XGBoost, and LSTMs (if using deep learning)**.
+- Supports models like **Linear Regression, Random Forest, XGBoost**.
 - Trained on **historical weather data**, incorporating features such as temperature, humidity, wind speed, and pressure.
 
 ### **3. Apache Airflow**
