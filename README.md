@@ -1,10 +1,10 @@
-# Weather Data Pipeline
+# Weather Data Pipeline with Machine Learning
 
 ## Overview
 
-This project aims to build a **data pipeline** that extracts past **24-hour weather data** for specified locations, processes the data, and uses it to **predict the next day's weather**. The pipeline is orchestrated using **Apache Airflow**, with **Google Cloud Storage (GCS)** serving as the data storage solution and **Google BigQuery (BQ)** for data analysis and prediction.
+This project aims to build a **data pipeline** that extracts past **24-hour weather data** for specified locations, processes the data, and uses it to **predict the next day's weather** using **machine learning models**. The pipeline is orchestrated using **Apache Airflow**, with **Google Cloud Storage (GCS)** serving as the data storage solution and **Google BigQuery (BQ)** for data analysis and prediction.
 
-By leveraging **cloud-based data orchestration and storage**, this pipeline automates the **extraction, transformation, and loading (ETL) process** while ensuring scalability and reliability.
+By leveraging **cloud-based data orchestration, storage, and machine learning**, this pipeline automates the **extraction, transformation, and loading (ETL) process**, followed by **ML-based weather forecasting**, ensuring scalability and reliability.
 
 ---
 
@@ -17,16 +17,21 @@ The **Extract, Transform, Load (ETL)** process is the **core of the pipeline** a
 - **Transformation**: Processes the raw weather data to extract relevant features and **clean the data** for analysis.
 - **Loading**: Stores the **processed data** in **Google Cloud Storage (GCS)** and loads it into **Google BigQuery (BQ)** for further analysis.
 
-### **2. Apache Airflow**
-- Used to **orchestrate the pipeline**, ensuring efficient scheduling, monitoring, and dependency management.
-- DAGs (Directed Acyclic Graphs) define the workflow for **extracting, transforming, and loading** the weather data.
+### **2. Machine Learning Model for Prediction**
+- Uses **supervised learning models** trained on past weather data to forecast **next-day weather conditions**.
+- Supports models like **Linear Regression, Random Forest, XGBoost, and LSTMs (if using deep learning)**.
+- Trained on **historical weather data**, incorporating features such as temperature, humidity, wind speed, and pressure.
 
-### **3. Google Cloud Storage (GCS)**
+### **3. Apache Airflow**
+- Used to **orchestrate the pipeline**, ensuring efficient scheduling, monitoring, and dependency management.
+- DAGs (Directed Acyclic Graphs) define the workflow for **extracting, transforming, loading, training ML models, and making predictions**.
+
+### **4. Google Cloud Storage (GCS)**
 - Acts as **intermediate storage** for processed weather data before being ingested into BigQuery.
 
-### **4. Google BigQuery (BQ)**
+### **5. Google BigQuery (BQ)**
 - Used for **storing, querying, and analyzing** weather data.
-- Runs **SQL-based queries** to derive insights and predict the **next day's weather**.
+- Runs **SQL-based queries** to derive insights and store ML model predictions.
 
 ---
 
@@ -36,7 +41,8 @@ The **Extract, Transform, Load (ETL)** process is the **core of the pipeline** a
 2. The **raw data** is **transformed**, formatted, and cleaned for analysis.
 3. The **processed data** is stored in **Google Cloud Storage (GCS)**.
 4. The data is then **loaded into Google BigQuery (BQ)** for further analysis.
-5. **Predictions** are generated based on the **past 24-hour weather data** to forecast the **next day's weather**.
+5. **A machine learning model is trained** using historical weather data.
+6. **Predictions** are generated for **the next day's weather** and stored in **BigQuery**.
 
 ---
 
@@ -48,6 +54,7 @@ To use this pipeline, you need to **set up** the following:
 - **Google BigQuery (BQ)** (for querying and analysis)
 - A list of **locations** for which you want to fetch weather data.
 - A scheduled Airflow DAG run (e.g., **daily**) to ensure continuous updates.
+- **Machine Learning Model Training** to periodically retrain the model.
 
 ---
 
@@ -107,7 +114,10 @@ Follow these steps to set up the development environment:
        temperature FLOAT64,
        humidity INT64,
        wind_speed FLOAT64,
-       weather_condition STRING
+       weather_condition STRING,
+       predicted_temperature FLOAT64,
+       predicted_humidity INT64,
+       predicted_wind_speed FLOAT64
    );
    ```
 
@@ -123,10 +133,18 @@ Follow these steps to set up the development environment:
 2. **Monitor the DAG Execution**:
    - Check the **logs** for each task to verify execution.
 
-3. **Verify Data in BigQuery**:
-   - Run the following query in BigQuery to check if the weather data has been successfully loaded:
+3. **Train the Machine Learning Model**:
+   - The ML model is trained on historical data stored in **BigQuery**.
+   - Run the ML training script:
+     ```sh
+     python train_model.py
+     ```
+   - The trained model is used to predict **the next day's weather**.
+
+4. **Verify Data in BigQuery**:
+   - Run the following query in BigQuery to check if the predictions have been successfully loaded:
      ```sql
-     SELECT * FROM weather_data.weather_forecast LIMIT 10;
+     SELECT * FROM weather_data.weather_forecast ORDER BY timestamp DESC LIMIT 10;
      ```
 
 ---
@@ -141,16 +159,18 @@ graph TD;
     B --> C[Transform & Clean Data]
     C --> D[Store Processed Data in GCS]
     D --> E[Load Data into BigQuery]
-    E --> F[Analyze & Predict Next-Day Weather]
-    F --> G[End Pipeline]
+    E --> F[Train Machine Learning Model]
+    F --> G[Generate Next-Day Predictions]
+    G --> H[Store Predictions in BigQuery]
+    H --> I[End Pipeline]
 ```
 
 ---
 
 ## Expected Output
 
-- **BigQuery Table:** Stores processed weather data with features such as temperature, humidity, wind speed, and weather conditions.
-- **Weather Predictions:** Generates **next-day forecasts** based on the past 24 hours of weather data.
+- **BigQuery Table:** Stores processed weather data along with **predicted values** (temperature, humidity, wind speed).
+- **Weather Predictions:** Generates **next-day forecasts** using a trained machine learning model.
 - **Airflow DAG Execution Logs:** Logs each step of the ETL process, allowing monitoring and debugging.
 
 ---
@@ -172,11 +192,15 @@ graph TD;
 - Ensure that your **Google Cloud Service Account** has `BigQuery Data Editor` and `Storage Admin` roles.
 - Verify that the `GOOGLE_APPLICATION_CREDENTIALS` environment variable is correctly set.
 
+### **3. Machine Learning Issues**
+- If predictions are inaccurate, try **retraining the model** with more historical data.
+- Experiment with **different models** (e.g., Random Forest, XGBoost, LSTMs) to improve accuracy.
+
 ---
 
 ## Conclusion
 
-This **weather data pipeline project** demonstrates how to **leverage cloud services and data orchestration tools** to build a **scalable and automated system for weather data analysis and prediction**. By using **Apache Airflow**, **Google Cloud Storage**, and **Google BigQuery**, the pipeline efficiently extracts, processes, and analyzes weather data while enabling scheduled automation.
+This **weather data pipeline project** demonstrates how to **leverage cloud services, machine learning, and data orchestration tools** to build a **scalable and automated system for weather data analysis and prediction**. By using **Apache Airflow**, **Google Cloud Storage**, **Google BigQuery**, and **machine learning models**, the pipeline efficiently extracts, processes, and analyzes weather data while enabling **automated predictions**.
 
 ---
 
@@ -186,3 +210,4 @@ This **weather data pipeline project** demonstrates how to **leverage cloud serv
 - [Google Cloud Storage Docs](https://cloud.google.com/storage/docs/)
 - [Google BigQuery Docs](https://cloud.google.com/bigquery/docs/)
 - [OpenWeatherMap API](https://openweathermap.org/api)
+- [Scikit-Learn ML Models](https://scikit-learn.org/stable/)
